@@ -1,6 +1,6 @@
 {
-	"homepage": "https://our-maydays.github.io/wedding-invitation",
-  "name": "wedding-invitation",
+	"homepage": "https://our-maydays.github.io/invitation-card",
+  "name": "invitation-card",
   "private": true,
   "version": "0.0.0",
   "type": "module",
