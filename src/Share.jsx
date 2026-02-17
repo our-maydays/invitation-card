@@ -11,7 +11,7 @@ const sectionDivide = 3
 
 const Share = () => {
 
-	const url = 'https://our-maydays.github.io/reactest2'
+	const url = 'https://our-maydays.github.io/invitation-card'
 
 	
 	const shareUrl = async() => {
