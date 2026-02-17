@@ -1,0 +1,86 @@
+.calendar-box {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	color: black;
+	font-size: 1.6rem;
+	font-family: Regular;
+	forced-color-adjust: none;
+	-webkit-forced-color-adjust: none;
+}
+
+.calendar {
+	height: 100%;
+	line-height: 3rem;
+	border-collapse: collapse;
+	margin: 0 auto;
+	padding: 0;
+}
+
+.calendar td {
+	text-align: center;
+	padding-bottom: 0.3rem;
+	padding-top: 0.3rem;
+	color: black;
+	z-index: 1;			 
+width: 4rem;
+height: 3rem;
+}
+
+.calendar th {
+	text-align: center;
+	padding-bottom: 0.3rem;
+	padding-top: 0.3rem;
+	color: black;
+	z-index: 1;			 
+  -webkit-text-stroke: 0.3px;
+}
+
+.calendar .sunday {
+	color: #E84D1F;
+}
+
+.calendar .special-day {
+	position: relative;
+	z-index: 1;
+	font-family: Regular;
+	color: white;
+}
+
+.calendar .special-day::after {
+	content: '';
+	display: block;
+	background-image: url('/icon/heart.png');
+	background-size: 4rem;
+	background-repeat: no-repeat;
+	background-position: center;
+	color: transparent;
+	width: 4rem;
+	height: 4rem;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: -1;
+	animation: heartbeat 3s infinite;
+}
+
+
+@keyframes heartbeat {
+	0% {
+		transform: translate(-50%,-50%) scale(1);
+	}
+	25% {
+		transform: translate(-50%,-50%) scale(1.1);
+	}
+	50% {
+		transform: translate(-50%,-50%) scale(1);
+	}
+	75% {
+		transform: translate(-50%,-50%) scale(1.1);
+	}
+	100% {
+		transform: translate(-50%,-50%) scale(1);
+	}
+}

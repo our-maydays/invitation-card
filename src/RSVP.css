@@ -1,0 +1,64 @@
+.rsvp-title {
+	font-family: Regular;
+	font-size: 1.8rem;
+	text-align: center;
+	padding: 0;
+	margin: 0;
+	-webkit-text-stroke: 0.3px;
+	color: black;
+}
+
+.rsvp-question {
+	font-family: Regular;
+	height: 2rem;
+	width: 90%;
+	font-size: 1.6rem;
+	text-align: left;
+	margin: 0 auto;
+	padding: 0;
+	line-height: 2rem;
+	color: black;
+}
+
+.rsvp-input {
+	font-family: Regular;
+	font-size: 1.6rem;
+	line-height: 1.6rem;
+	margin: 0 auto;
+	padding: 0.5rem;
+	padding-left: 1.5rem;
+	height: 2rem;				 
+	border-radius: 0.8rem;
+	background-color: white;
+	border: none;
+	outline: none;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rsvp-input:focus,
+.rsvp-input:hover,
+.rsvp-input:focus-visible {
+	outline: none;
+}
+
+
+.rsvp-toggle {
+	display: flex;
+	justify-content: space-between;
+	width: 90%;
+	margin: 0 auto;
+}
+
+.rsvp-toggle .button {
+	width: 15rem;
+	background: white;
+	color: black;
+}
+
+.rsvp-toggle .button.active {
+	background: #A999C9;
+color:white;
+}
+
+
+

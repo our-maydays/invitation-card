@@ -1,0 +1,235 @@
+import { useEffect, useState, useMemo } from "react";
+import Modal from 'react-modal'
+import './App.css'
+import './Gallery.css'
+import Space from './Space'
+
+import Slider from 'react-slick';
+import 'slick-carousel/slick/slick.css';
+import 'slick-carousel/slick/slick-theme.css';
+
+const closeIcon = `${import.meta.env.BASE_URL}icon/close_icon.svg`
+
+const sectionHeight = 6
+const sectionDivide = 3
+const iconHeight = 2
+
+// src/assets/images에 있는 모든 이미지를 한번에 불러오기
+const imagePaths = import.meta.glob('./assets/photo/*.{jpeg,JPEG}', {
+//const imagePaths = import.meta.glob('/photo/*.{jpg,JPG}',{
+	eager: true,
+	query: '?url',
+	import: 'default',
+});
+
+Modal.setAppElement('#root')
+console.log(imagePaths)
+
+const Gallery = () => {
+	const [isOpen, setIsOpen] = useState(false)
+	const [currentIndex, setCurrentIndex] = useState(0)
+	const dotWidth = 15
+	const containerWidth = 75
+
+	const chunk = (arr, size) => {
+		const result = []
+		for (let i = 0; i < arr.length; i += size) {
+			result.push(arr.slice(i , i+size))
+		}
+		return result
+	}
+
+	const images = useMemo( () => {
+		return Object.values(imagePaths)
+	}, [])
+
+	useEffect( () => {
+		document.body.style.overflow = isOpen ? "hidden" : 'auto';
+	}, [isOpen])
+
+	useEffect( () => {
+		if (isOpen) {
+			document.body.style.overflow = 'hidden'
+		} else {
+			document.body.style.overflow = 'auto'
+		}
+
+		return () => {
+			document.body.style.overflow = 'auto'
+		}
+	}, [isOpen])
+
+	const openModal = (index) => {
+		console.log('index' , index)
+		setCurrentIndex(index);
+		setIsOpen(true);
+	}
+
+	const gridSettings = {
+		dots: true,
+		infinite: true,
+		speed: 500,
+		slidesToShow: 1,
+		slidesToScroll: 1,
+		rows: 1,
+		arrows: false,
+	}
+
+	const modalSettings = (startIndex) => ({
+		initialSlide: startIndex,
+		infinite: true,
+		speed: 500,
+		slidesToShow: 1,
+		slidesToScroll: 1,
+		arrows: true,
+		dots: true,
+		appendDots: (dots) => (
+			<div>
+				<ul> {dots} </ul>
+			</div>
+		),
+		beforeChange: (current, next) => {
+			updateDots(next);
+		},
+	})
+
+	const updateDots = (index) => {
+		const dotsUl = document.querySelector('.modal-wrapper .slick-dots ul')
+		if (!dotsUl) return
+
+		const moveX = (containerWidth/2) - (index * dotWidth) - (dotWidth/2)
+		dotsUl.style.transition = 'transform 500ms cubic-bezier(0.25, 0.1, 0.25, 1)'
+		dotsUl.style.transform = `translateX(${moveX}px)`
+
+		const dotItems = dotsUl.querySelectorAll('li')
+		dotItems.forEach((dot, i) => {
+			const distance = Math.abs(i - index)
+			dot.style.transition = 'all 500ms cubic-bezier(0.25, 0.1, 0.25, 1)'
+			if (distance === 0) {
+				dot.style.transform = 'scale(1.2)'
+			} else if (distance === 1) {
+				dot.style.transform = 'scale(0.8)'
+			} else if (distance === 2) {
+				dot.style.transform = 'scale(0.6)'
+			} else {
+				dot.style.transform = 'scale(0.4)'
+			}
+		})
+	}
+
+	useEffect(() => {
+		if (isOpen) {
+			const timer = setTimeout(() => {
+				updateDots(currentIndex)
+			}, 10)
+			return () => clearTimeout(timer)
+		}
+	}, [isOpen, currentIndex])
+
+	return (
+		<div className='content-box'>
+			<Space height={`${sectionHeight}rem`}/>
+	
+			<div className='section-subtitle'>GALLERY</div>
+			<div className='section-title'> 사진첩</div>
+
+			<Space height={`${sectionDivide}rem`}/>
+
+			<div className='grid-wrapper'>
+				<Slider {...gridSettings}>
+					{chunk(images,4).map( (group, pageIndex) => (
+						<div className='grid-page' key={pageIndex}>
+							{group.map( (src,index) => (
+								<div
+									className='grid-cell'
+									key={index}
+									onClick={ () => openModal(pageIndex * 4 + index) }
+								>
+									<div className='image-wrapper'>
+										<img 
+											src = {src}
+											draggable={false}
+											onContextMenu={ (e) => e.preventDefault() }
+											onDragStart={ (e) => e.preventDefault() }
+										/>
+									</div>
+								</div>
+							))}
+						</div>
+					))}
+				</Slider>
+			</div>
+
+			<Space height={`${sectionHeight}rem`}/>
+
+			<Modal
+				isOpen={isOpen}
+				onRequestClose={() => setIsOpen(false)}
+				style={{
+					overlay: {
+						backgroundColor: 'rgba(230,230,230,0.9)',
+						zIndex: 1000,
+					},
+					content: {
+						position: 'absolute',
+						top: '50%',
+						left: '50%',
+						transform: 'translate(-50%, -50%)',
+						background: 'none',
+						width: '100vw',
+						height: '100vh',
+						margin: '0 auto',
+						padding: '0px',
+						border: 'none',
+						overflow: 'hidden',
+					},
+				}}
+				>
+				
+					<div className='modal-wrapper'>
+						<div style={{
+							display:'flex',justifyContent:'right',
+							height:`${iconHeight}rem`, width:'100%',
+							margin: 0, padding: 0,
+							position: 'absolute',
+							top: `${iconHeight}rem`,
+						}}>
+						<div
+							onClick={ () => setIsOpen(false)}
+							style={{
+								display: 'flex',
+								justifyContent: 'center',
+								alignItems: 'center',
+								background: 'transparent',
+								border: 'none',
+								cursor: 'pointer',
+								marginRight: '0.5rem',
+								zIndex: 1,
+							}}
+						>
+							<img src={closeIcon} style={{height:'3rem'}}/>
+						</div>
+						</div>
+						<Slider {...modalSettings(currentIndex)} key={currentIndex}>
+							{images.map( (src, index) => (
+								<div key={index} className='modal-slide'>
+									<img
+										src={src}
+										alt=''
+										className='modal-image'
+										onContextMenu={(e) => e.preventDefault()}
+				            onDragStart={(e) => e.preventDefault()}
+				            draggable={false}
+									/>
+								</div>
+							))}
+						</Slider>
+						
+
+					</div>
+				</Modal>
+		</div>
+	)
+}
+
+export default Gallery

@@ -1,0 +1,598 @@
+import './App.css'
+import './GuestBook.css'
+import Space from './Space'
+
+import { useState, useEffect, useRef } from 'react'
+import moment from 'moment'
+import 'moment/dist/locale/ko'
+import SHA256 from 'crypto-js/sha256'
+
+const loginIcon = `${import.meta.env.BASE_URL}/icon/check.svg`
+const closeIcon = `${import.meta.env.BASE_URL}/icon/close_icon.svg`
+
+const sectionHeight = 6
+const sectionDivide = 3
+const textHeight = 3
+const iconHeight = 5
+const buttonHeight = 4
+const sectionSpace = 1.5
+const messageHeight = 18
+
+const modalHeight = iconHeight + textHeight + sectionSpace + messageHeight + sectionSpace + buttonHeight + sectionDivide
+
+import Modal from 'react-modal'
+import { 
+	collection, 
+	doc,
+	addDoc,
+	getDocs,
+	updateDoc,
+	deleteDoc,
+	orderBy,
+	query,
+	limit
+	} from 'firebase/firestore'
+import { db } from './firebase'
+
+Modal.setAppElement('#root')
+
+const hashPassword = (password) => {
+	return SHA256(password).toString()
+}
+
+const GuestBook = () => {
+	moment.locale('ko')
+	const [name, setName] = useState('')
+	const [content, setContent] = useState('')
+	const [password, setPassword] = useState('')
+
+	const [comments, setComments] = useState([])
+	
+	const [querySnapshot, setQuerySnapshot] = useState(null)
+	const [isLoading, setIsLoading] = useState(false)
+	
+	const [selectedComment, setSelectedComment] = useState(null)
+	const [inputPassword, setInputPassword] = useState('')
+	const [isAuthorized, setIsAuthorized] = useState(false)
+	const [editContent, setEditContent] = useState('')
+	const [editName, setEditName] = useState('')
+
+	const [isOpenNew, setIsOpenNew] = useState(false)
+	const [isOpenVerify, setIsOpenVerify] = useState(false)
+	const [isOpenOld, setIsOpenOld] = useState(false)
+
+	const scrollRef = useRef(null)
+
+	const [show, setShow] = useState(false)
+	const timerRef = useRef(null)
+
+	const fetchData = async (newLimit) => {
+		setIsLoading(true)
+		const querySnapshot = await getDocs(
+			query(
+				collection(db, 'comment'),
+				orderBy('createdAt','desc'),
+				limit(newLimit)
+			)
+		)
+		setQuerySnapshot(querySnapshot)
+		setIsLoading(false)
+	}
+
+	useEffect( () => {
+		fetchData(10);
+	}, [])
+	
+	const loadMoreData = () => {
+		if (!isLoading) {
+			const newLimit = querySnapshot.docs.length + 5
+			fetchData(newLimit)
+		}
+	}
+
+	const onClickSubmitHandler = async () => {
+		const createdAt = new Date()
+		const validName = name.trim().length > 0
+		const validContent = content.trim().length > 0
+		const validPassword = password.trim().length > 0
+		const errors = []
+
+		if (!validName) errors.push('이름')
+		if (!validPassword) errors.push('비밀번호')
+		if (!validContent) errors.push('메세지')
+
+		if (errors.length > 0) {
+			alert(`${errors.join(', ')} 항목을 입력해주세요`)
+		} else {
+			const passwordHash = hashPassword(password)
+			await addDoc(collection(db,'comment'), {
+				name: name,
+				content: content,
+				passwordHash: passwordHash,
+				createdAt: createdAt,
+			})
+
+			const newComment = {
+				id: comments.length,
+				name,
+				content,
+				passwordHash,
+				createdAt,
+			}
+
+			setComments([...comments, newComment])
+
+			const querySnapshot = await getDocs(
+				query(collection(db, 'comment'), orderBy('createdAt','desc'))
+			)
+			setQuerySnapshot(querySnapshot)
+
+			setName('')
+			setContent('')
+			setPassword('')
+			setIsOpenNew(false)
+		}
+	}
+
+	const verifyPassword = () => {
+		if (hashPassword(inputPassword) === selectedComment.passwordHash) {
+			setIsAuthorized(true)
+		} else {
+			alert('비밀번호가 일치하지 않습니다')
+		}
+	}
+
+	const handleUpdate = async () => {
+		await updateDoc(doc(db,'comment', selectedComment.id), {
+			content: editContent,
+			name: editName,
+		})
+		closeModal()
+		fetchData(querySnapshot.docs.length) //??
+	}
+
+	const handleDelete = async () => {
+		await deleteDoc(doc(db,'comment', selectedComment.id))
+		closeModal()
+		fetchData(querySnapshot.docs.length)
+	}
+
+	const closeNew = () => {
+		setName('')
+		setContent('')
+		setPassword('')
+		setIsOpenNew(false)
+	}
+
+	const closeModal = () => {
+		setSelectedComment(null)
+		setInputPassword('')
+		setIsAuthorized(false)
+		setIsOpenVerify(false)
+	}
+
+	const passwordShow = () => {
+		console.log('clicked')
+		console.log('show:', show)
+
+		if (timerRef.current) {
+			clearTimeout(timerRef.current)
+		}
+
+		setShow(true)
+
+		timerRef.current = setTimeout( () => {
+			setShow(false)
+			timerRef.current = null
+		}, 3000)
+	}
+
+
+
+	const onChangeNameHandler = (e) => {
+		setName(e.target.value)
+	}
+
+	const onChangeContentHandler = (e) => {
+		setContent(e.target.value)
+	}
+
+	const onChangePasswordHandler = (e) => {
+		const passwordEng = e.target.value.replace(/[^0-9]/g,'');
+		setPassword(passwordEng)
+	}
+
+
+	useEffect( () => {
+		if (isOpenNew) {
+			document.body.style.overflow = 'hidden'
+		} else {
+			document.body.style.overflow = 'auto'
+		}
+
+		return () => {
+			document.body.style.overflow = 'auto'
+		}
+
+	}, [isOpenNew])
+
+
+	useEffect( () => {
+		if (isOpenVerify) {
+			document.body.style.overflow = 'hidden'
+		} else {
+			document.body.style.overflow = 'auto'
+		}
+
+		return () => {
+			document.body.style.overflow = 'auto'
+		}
+
+	}, [isOpenVerify])
+
+
+	useEffect( () => {
+		const div = scrollRef.current
+		if (!div) return;
+		div.addEventListener('scroll',handleScroll)
+		return () => {
+			div.removeEventListener('scroll',handleScroll)
+		}
+	}, [querySnapshot])
+
+
+	const handleScroll = () => {
+		const div = scrollRef.current;
+		if (!div) return;
+		const scrollTop = div.scrollTop
+		const clientHeight = div.clientHeight;
+		const scrollHeight = div.scrollHeight;
+
+		if (-scrollTop + clientHeight >= scrollHeight - 50) {
+			console.log(div.scrollBottom)
+			console.log(scrollTop)
+			console.log(clientHeight)
+			console.log(scrollHeight)
+			loadMoreData();
+		}
+
+
+	}
+
+
+	return (
+		<div className='content-box' style={{
+			display: 'flex',
+			flexDirection: 'column',
+			alignItems: 'center'
+		}}>
+			<Space height={`${sectionHeight}rem`}/>
+
+			<div className='section-subtitle'>GUEST BOOK</div>
+			<div className='section-title'>방명록</div>
+
+			<Space height={`${sectionDivide}rem`}/>
+
+			<div className='guestbook'>
+
+				{/* Display Area */}
+
+				<div ref={scrollRef} 
+					style= {{
+						display: 'flex',
+						flexDirection: 'column-reverse',
+						overflowY: 'scroll',
+						width: '100%',
+						height: '349px',
+					}}
+				>
+
+					{querySnapshot &&
+						[...querySnapshot.docs].map( (doc) => (
+							<div 
+								key={doc.id}
+								onClick={ () => {
+									setSelectedComment({ id: doc.id, ...doc.data() })
+									setEditContent(doc.data().content)
+									setEditName(doc.data().name)
+									setIsOpenVerify(true)
+								}}
+							>
+									<div className='nameOutput'> {doc.data().name} </div>
+									
+									<div style={{display: 'flex', flexDirection: 'row', alignItems: 'flex-end'}}>
+										<div className='messageOutput'> {doc.data().content} </div>
+										<div className='dateOutput'>
+											{moment(doc.data().createdAt.toDate()).format('YY.MM.DD')}
+											<br/>
+											{moment(doc.data().createdAt.toDate()).format('a h:mm')}
+										</div>
+									</div>
+							</div>
+						))
+					}
+				</div>
+			</div>
+
+			<Space height={`${sectionDivide/2}rem`}/>
+
+			<div className='button'
+				onClick={() => setIsOpenNew(true) }
+				style={{width:'90%', paddingLeft:0, paddingRight:0}}
+			>
+					축하메세지 보내기
+			</div>
+
+			<Space height={`${sectionHeight}rem`}/>
+
+			{/* Update & Delete Modal */}
+
+			{selectedComment && (
+				<Modal
+					isOpen={isOpenVerify}
+					onRequestClose={closeModal}
+					preventScroll={true}
+					style={{
+						overlay: {
+							backgroundColor: '#D2D7D9CC',
+							zIndex: '1000',
+						},
+						content: {
+							position: 'absolute',
+							top: '50%',
+							left: '50%',
+							transform: 'translate(-50%,-50%)',
+							background: '#F8F7EE',
+							width: '95%',
+							maxWidth: '390px',
+							height: `${modalHeight}rem`,
+							border: 'none',
+							borderRadius: '1rem',
+							margin: 0, padding: 0,
+						},
+					}}
+				>
+					<div style={{height: '100%'}}>
+						<div style={{
+							display:'flex', justifyContent: 'right',
+							height: `${iconHeight}rem`,
+							margin: 0, padding: 0,
+						}}>
+							<div onClick={closeModal} style={{
+									display: 'flex',
+									justifyContent: 'center',
+									alignItems: 'center',
+									background: 'transparent',
+									fontSize: '1.6rem',
+									border: 'none',
+									cursor: 'pointer',
+									marginRight: '1rem',
+								}}>
+								<img src={closeIcon} style={{height: '3rem'}}/>
+							</div>
+						</div>
+
+						<div style={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							height: `${modalHeight-iconHeight}rem`,
+						}}>
+							{!isAuthorized ? (
+								<div 
+									style={{
+										width: '80%',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContents: 'center',
+										position: 'absolute',
+										top: '50%',
+										left: '50%',
+										transform: 'translate(-50%,-50%)',	
+									}}
+								>
+									<div 
+										style={{
+											position: 'relative',
+											display: 'flex',
+											alignItems: 'center',
+											height: `${buttonHeight}rem`,
+											marginRight: '1rem',
+										}}
+									>
+										<textarea className='passwordInput'
+											type='password'
+											placeholder='비밀번호(숫자만 입력 가능)'
+											onChange={(e) => setInputPassword(e.target.value.replace(/[^0-9]/g,''))}
+											value={inputPassword}
+											style={{height: `${buttonHeight}rem`, lineHeight:`${buttonHeight-1}rem`}}
+										/>
+									</div>
+									<div className='button' onClick={verifyPassword} style={{width: '6rem', height:`${buttonHeight}rem`}}>
+										<img src={loginIcon} className='icon'/>
+									</div>
+								</div>
+							) : (
+								<div style={{ width: '100%', height:`${modalHeight-iconHeight}rem`}}>
+									<div style={{
+										display: 'flex',
+										justifyContent: 'flex-start',
+										alignItems:'center',
+										marginLeft: '1rem', marginRight: '1rem',
+										height: `${buttonHeight}rem`,
+									}}>
+										<textarea className='nameInput'
+											placeholder='이름'
+											onChange={ (e) => setEditName(e.target.value)}
+											value={editName}
+											style={{height: `${buttonHeight}rem`, width:'50%', lineHeight:`${buttonHeight-1}rem`}}
+										/>
+									</div>
+
+									<Space height={`${sectionSpace}rem`}/>
+
+									<div style={{
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'center',
+										height: `${messageHeight}rem`,
+										marginLeft: '1rem', marginRight: '1rem',
+									}}>
+										<textarea className='messageInput'
+											placeholder='메세지'
+											onChange={(e) => setEditContent(e.target.value)}
+											value={editContent}
+											autoComplete='new-password'
+											style={{height: `${messageHeight-1}rem`}}
+										/>
+									</div>
+
+									<Space height={`${sectionSpace}rem`}/>
+
+									<div 
+										style={{
+											display: 'flex',
+											justifyContent: 'space-between',
+											alignItems: 'center',
+											marginTop: '1rem',
+											width: '95%',
+											height: `${buttonHeight}rem`,
+											margin: 'auto',
+										}}
+									>
+										<div className='button'  onClick={handleUpdate} style={{width:'18rem'}}>
+											수정
+										</div>
+
+										<div className='button' onClick={handleDelete} style={{width:'18rem'}}> 
+											삭제
+										</div>
+
+									</div>
+
+									<Space height={`${sectionSpace}rem`}/>
+									
+								</div>
+							)}
+						</div>
+					</div>
+				</Modal>
+			)}								
+
+			{/* Send New Message Modal */}
+
+			<Modal 
+				isOpen={isOpenNew}
+				onRequestClose= {closeNew}
+				style={{
+					overlay: {
+						backgroundColor: '#D2D7D9CC',
+						zIndex: '1000',
+					},
+					content: {
+						top: '50%',
+						left: '50%',
+						transform: 'translate(-50%,-50%)',
+						background: '#F8F7EE',
+						width: '95%',
+						maxWidth: '390px',
+						height: `${modalHeight}rem`,
+						border: 'none',
+						margin: '0',
+						padding: '0',
+						borderRadius: '1.5rem',
+					},
+				}}
+			>
+				<div style={{height: '100%'}}>
+					<div style={{
+						display:'flex', justifyContent:'right',
+						height: `${iconHeight}rem`,
+					}}>
+						<div onClick={closeNew} style={{
+							display: 'flex',
+							alingItems: 'center',
+							flexDirection: 'column',
+							justifyContent: 'center',
+							background: 'transparent',
+							border: 'none',
+							cursor: 'pointer',
+							marginRight: '1rem',
+						}}>
+							<img src={closeIcon} style={{height: '3rem'}} />
+						</div>
+					</div>
+
+					<div style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						width: '90%',
+						margin: '0 auto',
+						height: `${buttonHeight}rem`,
+					}}>
+						<textarea className='nameInput'
+							type='text'
+							placeholder='이름'
+							onChange={onChangeNameHandler}
+							value={name}
+							style={{height: `${buttonHeight}rem`, lineHeight:`${buttonHeight-1}rem`}}
+						/>
+
+						<div style={{width:'2rem'}}/>
+
+
+						<textarea className='passwordInput'
+							type='text'
+							placeholder='비밀번호(숫자만)'
+							onChange={onChangePasswordHandler}
+							value={password}
+							style={{height: `${buttonHeight}rem`, lineHeight:`${buttonHeight-1}rem`}}
+						/>
+
+					</div>
+
+					<Space height={`${sectionSpace}rem`}/>
+
+					<div style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						width: '90%',
+						margin: '0 auto',
+						height: `${messageHeight}rem`,
+					}}>
+						<textarea className='messageInput'
+							type='text'
+							placeholder='메세지를 작성해주세요'
+							onChange={onChangeContentHandler}
+							value={content}
+							style={{height: `${messageHeight-1}rem`, width:'100%'}}
+						/>
+					</div>
+
+
+
+					<Space height={`${sectionSpace}rem`}/>
+					
+					<div style={{display:'flex', justifyContent: 'center'}}>
+
+						<div className='button' onClick={onClickSubmitHandler} 
+							style={{width: '90%', height:`${buttonHeight}rem`}}
+						>
+							전송
+						</div>
+
+					</div>
+				
+					<Space height={`${sectionDivide}rem`}/>
+
+				</div>
+			</Modal>
+		</div>
+
+	)
+
+};
+
+export default GuestBook
