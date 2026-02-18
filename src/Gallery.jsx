@@ -101,7 +101,7 @@ const Gallery = () => {
 	useEffect(() => {
 		if (isOpen) {
 			const timer = setTimeout(() => {
-				updateDots(currentIndex)
+				appendDots(currentIndex)
 			}, 10)
 			return () => clearTimeout(timer)
 		}
