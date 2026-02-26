@@ -200,6 +200,7 @@ const Gallery = () => {
 										className='modal-image'
 										onContextMenu={(e) => e.preventDefault()}
 				            onDragStart={(e) => e.preventDefault()}
+										style={{pointerEvents:'auto'}}
 				            draggable={false}
 									/>
 								</div>
