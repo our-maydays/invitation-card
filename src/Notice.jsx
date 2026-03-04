@@ -34,13 +34,13 @@ const Notice = () => {
 								야외에서 예식이 진행되니
 								선글라스 지참을 추천드립니다<br/><br/>
 							</div>
-							
+							{/*	
 							<div className='notice-item'>
 								<div style={{fontFamily:'sans-serif'}}>✓&nbsp;</div>
 								'슬이생밴드'의 소소한
 								축하 무대가	준비되어 있습니다
 							</div>
-							
+							*/}
 				</div>
 			</div>
 			
