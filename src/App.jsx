@@ -53,7 +53,6 @@ function App() {
 			<div className='main-frame'>
 
 
-				<WeddingDay targetDate='2026-05-09'/>
 
 				<div style={{
 					textAlign: 'right', 
