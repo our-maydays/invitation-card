@@ -8,6 +8,8 @@ import Map from './Map'
 const sectionHeight = 6
 const sectionDivide = 3
 
+const locationUrl = `${import.meta.env.BASE_URL}image/weddinglocation.png`
+
 const Location = () => {
 	return (
 		<div className='content-box'>
@@ -43,6 +45,11 @@ const Location = () => {
 			<Transport/>
 
 			<Space height={`${sectionHeight}rem`}/>
+
+			<div className='image-container'>
+				<img src={locationUrl}/>
+			</div>
+
 		</div>
 	)
 }
